@@ -108,6 +108,11 @@ model ClientRecord {
   contactPerson       String?
   address             String?
   contractRef         String?
+  status              String?  @default("active")
+  clientType          String?  @default("private")
+  totalProjects       Int?     @default(0)
+  totalBilled         Float?   @default(0)
+  notes               String?
   portalAccessEnabled Boolean  @default(false)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
