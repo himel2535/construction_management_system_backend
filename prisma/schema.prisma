@@ -312,7 +312,11 @@ model SiteSettlement {
   advancePaid    Float        @default(0)
   deductions     Float        @default(0)
   netPayable     Float        @default(0)
+  materialSummary Json?       @default("[]")
   status         String       @default("draft")
+  paidAt         String?
+  paymentRef     String?
+  remarks        String?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
