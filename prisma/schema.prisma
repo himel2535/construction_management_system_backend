@@ -146,6 +146,10 @@ model MaterialRequest {
   deliveryStatus String?       @default("requested")
   costCategory   String?
   createdBy      String?
+  submittedAt    Float?
+  requestedBy    String?
+  approvedAt     Float?
+  approvedBy     String?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
@@ -162,6 +166,10 @@ model PurchaseOrder {
   status      GeneralStatus @default(draft)
   billNo      String?
   items       Json?
+  lines       Json?
+  itemSummary String?
+  costCategory String?
+  orderDate   String?
   createdBy   String?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
