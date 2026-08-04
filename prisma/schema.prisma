@@ -260,7 +260,7 @@ model ApprovalQueueRow {
   path        String
   status      String   @default("pending")
   submittedBy String?
-  submittedAt DateTime @default(now())
+  submittedAt Float?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
