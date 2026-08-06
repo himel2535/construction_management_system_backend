@@ -73,6 +73,12 @@ export class ApiService {
     delete cleanData.createdAt;
     delete cleanData.updatedAt;
     
+    for (const key of ['rate', 'amount', 'quantity', 'total', 'paid', 'due', 'price', 'value', 'balance', 'openingBalance']) {
+      if (cleanData[key] !== undefined && cleanData[key] !== null) {
+        cleanData[key] = Number(cleanData[key]);
+      }
+    }
+    
     const modelName = MODEL_MAP[collection] || collection;
     if (modelName !== 'supplier' && modelName !== 'user') {
       delete cleanData.tenantId;
@@ -96,6 +102,12 @@ export class ApiService {
     delete cleanData.id;
     delete cleanData.createdAt;
     delete cleanData.updatedAt;
+    
+    for (const key of ['rate', 'amount', 'quantity', 'total', 'paid', 'due', 'price', 'value', 'balance', 'openingBalance']) {
+      if (cleanData[key] !== undefined && cleanData[key] !== null) {
+        cleanData[key] = Number(cleanData[key]);
+      }
+    }
     
     const modelName = MODEL_MAP[collection] || collection;
     if (modelName !== 'supplier' && modelName !== 'user') {
