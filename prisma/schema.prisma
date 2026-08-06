@@ -139,6 +139,7 @@ model MaterialRequest {
   projectId      String
   title          String
   boqId          String?
+  poId           String?
   qty            Float         @default(0)
   amount         Float         @default(0)
   status         GeneralStatus @default(draft)
@@ -150,6 +151,8 @@ model MaterialRequest {
   requestedBy    String?
   approvedAt     Float?
   approvedBy     String?
+  rejectedAt     Float?
+  rejectedBy     String?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
@@ -165,12 +168,17 @@ model PurchaseOrder {
   amount      Float         @default(0)
   status      GeneralStatus @default(draft)
   billNo      String?
+  deliveryStatus String?
   items       Json?
   lines       Json?
   itemSummary String?
   costCategory String?
   orderDate   String?
   createdBy   String?
+  approvedBy  String?
+  approvedAt  Float?
+  rejectedBy  String?
+  rejectedAt  Float?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
@@ -218,6 +226,12 @@ model Supplier {
   status           ActiveStatus @default(active)
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
+
+  bills            SupplierBill[]
+  payments         SupplierPayment[]
+  products         SupplierProduct[]
+  documents        SupplierDocument[]
+  notes            SupplierNote[]
 }
 
 model InventoryItem {
@@ -423,3 +437,85 @@ model EquipmentLog {
   siteInCharge   SiteInCharge @relation(fields: [siteInChargeId], references: [id], onDelete: Cascade)
 }
 
+
+model SupplierBill {
+  id             String   @id @default(uuid())
+  supplierId     String
+  supplierName   String?
+  projectId      String?
+  billNo         String?
+  billDate       String?
+  dueDate        String?
+  amount         Float    @default(0)
+  paidAmount     Float    @default(0)
+  balance        Float    @default(0)
+  status         String   @default("draft")
+  sourceType     String?
+  sourceRef      String?
+  costCategory   String?
+  narration      String?
+  createdBy      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  supplier       Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+}
+
+model SupplierPayment {
+  id             String   @id @default(uuid())
+  supplierId     String
+  paymentDate    String?
+  amount         Float    @default(0)
+  paymentMethod  String?
+  refNo          String?
+  narration      String?
+  allocations    Json?
+  createdBy      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  supplier       Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+}
+
+model SupplierProduct {
+  id             String   @id @default(uuid())
+  supplierId     String
+  name           String
+  code           String?
+  category       String?
+  rate           Float    @default(0)
+  status         String   @default("active")
+  remarks        String?
+  createdBy      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  supplier       Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+}
+
+model SupplierDocument {
+  id             String   @id @default(uuid())
+  supplierId     String
+  title          String
+  docType        String?
+  url            String?
+  expiryDate     String?
+  status         String   @default("draft")
+  createdBy      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  supplier       Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+}
+
+model SupplierNote {
+  id             String   @id @default(uuid())
+  supplierId     String
+  body           String
+  authorId       String?
+  authorName     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  supplier       Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+}

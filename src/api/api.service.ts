@@ -1,5 +1,5 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-// Trigger reload 2
+// Trigger reload 5
 import { PrismaService } from '../prisma/prisma.service';
 
 const MODEL_MAP: Record<string, string> = {
@@ -12,6 +12,11 @@ const MODEL_MAP: Record<string, string> = {
   purchaseOrders: 'purchaseOrder',
   goodsReceipts: 'goodsReceipt',
   suppliers: 'supplier',
+  supplierBills: 'supplierBill',
+  supplierPayments: 'supplierPayment',
+  supplierProducts: 'supplierProduct',
+  supplierDocuments: 'supplierDocument',
+  supplierNotes: 'supplierNote',
   inventoryItems: 'inventoryItem',
   clientInvoices: 'clientInvoice',
   approvalQueue: 'approvalQueueRow',
@@ -100,10 +105,15 @@ export class ApiService {
       delete cleanData.source;
     }
     
-    return model.update({
-      where: { id },
-      data: cleanData,
-    });
+    try {
+      return await model.update({
+        where: { id },
+        data: cleanData,
+      });
+    } catch (error: any) {
+      require('fs').appendFileSync('/tmp/backend-error.log', JSON.stringify({ action: "update", collection, id, cleanData, error: error.message }) + '\\n');
+      throw error;
+    }
   }
 
   async remove(collection: string, id: string) {
