@@ -464,10 +464,15 @@ model SupplierBill {
 model SupplierPayment {
   id             String   @id @default(uuid())
   supplierId     String
+  supplierName   String?
   paymentDate    String?
   amount         Float    @default(0)
   paymentMethod  String?
+  method         String?
   refNo          String?
+  reference      String?
+  chequeNo       String?
+  paymentType    String?
   narration      String?
   allocations    Json?
   createdBy      String?
@@ -482,6 +487,7 @@ model SupplierProduct {
   supplierId     String
   name           String
   code           String?
+  unit           String?
   category       String?
   rate           Float    @default(0)
   status         String   @default("active")
@@ -498,7 +504,9 @@ model SupplierDocument {
   supplierId     String
   title          String
   docType        String?
+  revision       String?
   url            String?
+  fileUrl        String?
   expiryDate     String?
   status         String   @default("draft")
   createdBy      String?
