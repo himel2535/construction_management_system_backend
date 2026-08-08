@@ -1,5 +1,3 @@
-// Prisma Schema for Construction Management System (PostgreSQL)
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,6 +5,572 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  displayName String
+  role        UserRole @default(viewer)
+  active      Boolean  @default(true)
+  tenantId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model CompanyProfile {
+  id          String   @id @default(uuid())
+  companyName String
+  phone       String?
+  email       String?
+  address     String?
+  currency    String   @default("BDT")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Project {
+  id                  String             @id @default(uuid())
+  name                String
+  code                String?
+  projectType         String?
+  status              ProjectStatus      @default(ongoing)
+  progressPercent     Float              @default(0)
+  startDate           String?
+  endDate             String?
+  contractValue       Float              @default(0)
+  clientId            String?
+  clientName          String?
+  projectManagerId    String?
+  ownerId             String?
+  workOrderNo         String?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  details             Json?
+  siteInChargeId      String?
+  lastFieldReportDate String?
+  siteAssignments     Assignment[]
+  clientInvoices      ClientInvoice[]
+  equipmentLogs       EquipmentLog[]
+  goodsReceipts       GoodsReceipt[]
+  materialLogs        MaterialLog[]
+  materialRequests    MaterialRequest[]
+  milestones          ProjectMilestone[]
+  progressEntries     ProjectProgress[]
+  purchaseOrders      PurchaseOrder[]
+  siteDiaries         SiteDiary[]
+  siteSettlements     SiteSettlement[]
+}
+
+model ClientRecord {
+  id                  String          @id @default(uuid())
+  name                String
+  companyName         String?
+  email               String?
+  phone               String?
+  contactPerson       String?
+  address             String?
+  contractRef         String?
+  portalAccessEnabled Boolean         @default(false)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  clientType          String?         @default("private")
+  notes               String?
+  status              String?         @default("active")
+  totalBilled         Float?          @default(0)
+  totalProjects       Int?            @default(0)
+  invoices            ClientInvoice[]
+}
+
+model ProjectMilestone {
+  id          String   @id @default(uuid())
+  projectId   String
+  projectName String?
+  title       String
+  plannedDate String?
+  status      String   @default("pending")
+  ownerId     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model MaterialRequest {
+  id             String        @id @default(uuid())
+  projectId      String
+  title          String
+  boqId          String?
+  qty            Float         @default(0)
+  amount         Float         @default(0)
+  status         GeneralStatus @default(draft)
+  requestType    String?
+  deliveryStatus String?       @default("requested")
+  costCategory   String?
+  createdBy      String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  approvedAt     Float?
+  approvedBy     String?
+  requestedBy    String?
+  submittedAt    Float?
+  poId           String?
+  rejectedAt     Float?
+  rejectedBy     String?
+  project        Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model PurchaseOrder {
+  id             String        @id @default(uuid())
+  projectId      String
+  mrId           String?
+  vendorId       String?
+  vendorName     String?
+  amount         Float         @default(0)
+  status         GeneralStatus @default(draft)
+  billNo         String?
+  items          Json?
+  createdBy      String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  costCategory   String?
+  itemSummary    String?
+  lines          Json?
+  orderDate      String?
+  approvedAt     Float?
+  approvedBy     String?
+  rejectedAt     Float?
+  rejectedBy     String?
+  deliveryStatus String?
+  project        Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model GoodsReceipt {
+  id                 String   @id @default(uuid())
+  projectId          String
+  poId               String
+  amount             Float    @default(0)
+  receiptDate        String?
+  status             String?  @default("received")
+  centralStockPosted Boolean  @default(false)
+  receiveLines       Json?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  project            Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Supplier {
+  id               String             @id @default(uuid())
+  name             String
+  email            String?
+  phone            String?
+  address          String?
+  category         String?
+  status           ActiveStatus       @default(active)
+  paymentTermsDays Int                @default(30)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  accountNo        String?
+  bankName         String?
+  binVat           String?
+  branch           String?
+  city             String?
+  code             String?
+  contactPerson    String?
+  createdBy        String?
+  creditLimit      Float?             @default(0)
+  paymentMethod    String?
+  remarks          String?
+  source           String?            @default("live")
+  tenantId         String?
+  tin              String?
+  type             String?
+  bills            SupplierBill[]
+  documents        SupplierDocument[]
+  notes            SupplierNote[]
+  payments         SupplierPayment[]
+  products         SupplierProduct[]
+}
+
+model InventoryItem {
+  id           String   @id @default(uuid())
+  name         String
+  code         String?
+  category     String?
+  unit         String?  @default("unit")
+  currentStock Float    @default(0)
+  reorderLevel Float    @default(0)
+  unitPrice    Float    @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model ClientInvoice {
+  id          String       @id @default(uuid())
+  projectId   String
+  projectName String?
+  clientId    String
+  amount      Float        @default(0)
+  paidAmount  Float        @default(0)
+  dueDate     String?
+  billDate    String?
+  status      String       @default("draft")
+  billType    String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  client      ClientRecord @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model ApprovalQueueRow {
+  id          String   @id @default(uuid())
+  entityType  String
+  entityId    String
+  projectId   String?
+  title       String
+  path        String
+  status      String   @default("pending")
+  submittedBy String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  submittedAt Float?
+}
+
+model SiteInCharge {
+  id            String           @id @default(uuid())
+  name          String
+  phone         String?
+  nid           String?
+  monthlyRate   Float            @default(0)
+  status        ActiveStatus     @default(active)
+  address       String?
+  notes         String?
+  startDate     String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  assignments   Assignment[]
+  equipmentLogs EquipmentLog[]
+  materialLogs  MaterialLog[]
+  siteDiaries   SiteDiary[]
+  settlements   SiteSettlement[]
+}
+
+model Assignment {
+  id             String       @id @default(uuid())
+  siteInChargeId String
+  projectId      String
+  projectName    String?
+  startDate      String?
+  endDate        String?
+  status         ActiveStatus @default(active)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  siteInCharge   SiteInCharge @relation(fields: [siteInChargeId], references: [id], onDelete: Cascade)
+}
+
+model MaterialLog {
+  id             String       @id @default(uuid())
+  projectId      String
+  siteInChargeId String
+  logDate        String
+  items          Json
+  remarks        String?
+  status         String       @default("submitted")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  siteInCharge   SiteInCharge @relation(fields: [siteInChargeId], references: [id], onDelete: Cascade)
+}
+
+model SiteSettlement {
+  id              String       @id @default(uuid())
+  projectId       String
+  siteInChargeId  String
+  month           String
+  monthlyRate     Float        @default(0)
+  laborTotal      Float        @default(0)
+  advancePaid     Float        @default(0)
+  deductions      Float        @default(0)
+  netPayable      Float        @default(0)
+  status          String       @default("draft")
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  materialSummary Json?        @default("[]")
+  paidAt          String?
+  paymentRef      String?
+  remarks         String?
+  project         Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  siteInCharge    SiteInCharge @relation(fields: [siteInChargeId], references: [id], onDelete: Cascade)
+}
+
+model SiteDiary {
+  id              String       @id @default(uuid())
+  projectId       String
+  weather         String?
+  laborCount      Int          @default(0)
+  status          String       @default("draft")
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  createdBy       String?
+  logDate         String
+  photos          Json         @default("[]")
+  siteInChargeId  String
+  workSummary     String?
+  submittedAt     DateTime?
+  approvedAt      DateTime?
+  approvedBy      String?
+  progressEntryId String?
+  project         Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  siteInCharge    SiteInCharge @relation(fields: [siteInChargeId], references: [id], onDelete: Cascade)
+}
+
+model Worker {
+  id                String       @id @default(uuid())
+  name              String
+  phone             String?
+  nid               String?
+  category          String?
+  dailyRate         Float        @default(0)
+  status            ActiveStatus @default(active)
+  address           String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  assignedProjectId String?
+  createdBy         String?
+  dailyWage         Float?
+  designation       String?
+  employmentType    String?
+  joiningDate       String?
+  photoUrl          String?
+  trade             String?
+  wageRate          Float?
+  workerCode        String?
+}
+
+model PayrollEntry {
+  id                String   @id @default(uuid())
+  workerId          String?
+  projectId         String?
+  status            String   @default("draft")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  amount            Float    @default(0)
+  budgetLaborActual Float?
+  createdBy         String?
+  date              String?
+  days              Float    @default(0)
+  reconciledAt      Float?
+  reconciledBy      String?
+  settlementMonth   String?
+  siteInChargeId    String?
+  type              String?
+  workerName        String?
+}
+
+model ProjectProgress {
+  id           String   @id @default(uuid())
+  projectId    String
+  activity     String
+  remarks      String?
+  progressDate String
+  executedQty  Float    @default(1)
+  plannedQty   Float    @default(1)
+  refType      String?
+  refId        String?
+  boqId        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  createdBy    String?
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model EquipmentLog {
+  id             String       @id @default(uuid())
+  projectId      String
+  siteInChargeId String
+  equipmentName  String
+  hours          Float        @default(0)
+  logDate        String
+  cost           Float        @default(0)
+  createdBy      String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  siteInCharge   SiteInCharge @relation(fields: [siteInChargeId], references: [id], onDelete: Cascade)
+}
+
+model SupplierBill {
+  id           String   @id @default(uuid())
+  supplierId   String
+  supplierName String?
+  projectId    String?
+  billNo       String?
+  billDate     String?
+  dueDate      String?
+  amount       Float    @default(0)
+  paidAmount   Float    @default(0)
+  balance      Float    @default(0)
+  status       String   @default("draft")
+  sourceType   String?
+  sourceRef    String?
+  costCategory String?
+  narration    String?
+  createdBy    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  supplier     Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+}
+
+model SupplierPayment {
+  id            String   @id @default(uuid())
+  supplierId    String
+  paymentDate   String?
+  amount        Float    @default(0)
+  paymentMethod String?
+  refNo         String?
+  narration     String?
+  allocations   Json?
+  createdBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  chequeNo      String?
+  method        String?
+  paymentType   String?
+  reference     String?
+  supplierName  String?
+  supplier      Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+}
+
+model SupplierProduct {
+  id         String   @id @default(uuid())
+  supplierId String
+  name       String
+  code       String?
+  category   String?
+  rate       Float    @default(0)
+  status     String   @default("active")
+  remarks    String?
+  createdBy  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  unit       String?
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+}
+
+model SupplierDocument {
+  id         String   @id @default(uuid())
+  supplierId String
+  title      String
+  docType    String?
+  url        String?
+  expiryDate String?
+  status     String   @default("draft")
+  createdBy  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  fileUrl    String?
+  revision   String?
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+}
+
+model SupplierNote {
+  id         String   @id @default(uuid())
+  supplierId String
+  body       String
+  authorId   String?
+  authorName String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+}
+
+model InventoryStockIn {
+  id           String   @id @default(uuid())
+  materialId   String
+  materialName String?
+  quantity     Float    @default(0)
+  supplierId   String?
+  supplierName String?
+  invoiceRef   String?
+  date         String?
+  projectId    String?
+  note         String?
+  grnId        String?
+  grnProjectId String?
+  grnLineIndex Int?
+  grnDedupeKey String?
+  invoiceNo    String?
+  receivedBy   String?
+  unitPrice    Float    @default(0)
+  source       String?
+  createdBy    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model InventoryStockOut {
+  id              String   @id @default(uuid())
+  materialId      String
+  materialName    String?
+  quantity        Float    @default(0)
+  workerId        String?
+  workerName      String?
+  workerRole      String?
+  projectId       String?
+  issueDate       String?
+  purpose         String?
+  returnExpected  Boolean  @default(false)
+  returnDate      String?
+  returnStatus    String?
+  issueVoucherRef String?
+  createdBy       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model WorkerAdvance {
+  id        String   @id @default(uuid())
+  workerId  String
+  amount    Float    @default(0)
+  date      String?
+  note      String?
+  reason    String?
+  projectId String?
+  givenBy   String?
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model WorkerSalaryPayment {
+  id             String   @id @default(uuid())
+  workerId       String
+  amount         Float    @default(0)
+  monthKey       String?
+  date           String?
+  note           String?
+  projectId      String?
+  paymentMode    String?
+  paidBy         String?
+  siteInChargeId String?
+  salaryCalcId   String?
+  status         String?
+  createdBy      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model WorkerAttendance {
+  id            String   @id
+  workerId      String
+  projectId     String?
+  date          String
+  status        String?
+  overtimeHours Float    @default(0)
+  markedBy      String?
+  updatedBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 enum UserRole {
@@ -43,487 +607,15 @@ enum ActiveStatus {
   inactive
 }
 
-model User {
-  id          String   @id @default(uuid())
-  email       String   @unique
-  displayName String
-  role        UserRole @default(viewer)
-  active      Boolean  @default(true)
-  tenantId    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model CompanyProfile {
-  id          String   @id @default(uuid())
-  companyName String
-  phone       String?
-  email       String?
-  address     String?
-  currency    String   @default("BDT")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model Project {
-  id               String        @id @default(uuid())
-  name             String
-  code             String?
-  projectType      String?
-  status           ProjectStatus @default(ongoing)
-  progressPercent  Float         @default(0)
-  startDate        String?
-  endDate          String?
-  contractValue    Float         @default(0)
-  clientId         String?
-  clientName       String?
-  projectManagerId String?
-  ownerId          String?
-  workOrderNo      String?
-  siteInChargeId   String?
-  lastFieldReportDate String?
-  details          Json?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-
-  milestones       ProjectMilestone[]
-  materialRequests MaterialRequest[]
-  purchaseOrders   PurchaseOrder[]
-  goodsReceipts    GoodsReceipt[]
-  clientInvoices   ClientInvoice[]
-  siteAssignments  Assignment[]
-  materialLogs     MaterialLog[]
-  siteDiaries      SiteDiary[]
-  siteSettlements  SiteSettlement[]
-  progressEntries  ProjectProgress[]
-  equipmentLogs    EquipmentLog[]
-}
-
-model ClientRecord {
-  id                  String   @id @default(uuid())
-  name                String
-  companyName         String?
-  email               String?
-  phone               String?
-  contactPerson       String?
-  address             String?
-  contractRef         String?
-  status              String?  @default("active")
-  clientType          String?  @default("private")
-  totalProjects       Int?     @default(0)
-  totalBilled         Float?   @default(0)
-  notes               String?
-  portalAccessEnabled Boolean  @default(false)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-
-  invoices            ClientInvoice[]
-}
-
-model ProjectMilestone {
-  id          String   @id @default(uuid())
-  projectId   String
-  projectName String?
-  title       String
-  plannedDate String?
-  status      String   @default("pending")
-  ownerId     String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-}
-
-model MaterialRequest {
-  id             String        @id @default(uuid())
-  projectId      String
-  title          String
-  boqId          String?
-  poId           String?
-  qty            Float         @default(0)
-  amount         Float         @default(0)
-  status         GeneralStatus @default(draft)
-  requestType    String?
-  deliveryStatus String?       @default("requested")
-  costCategory   String?
-  createdBy      String?
-  submittedAt    Float?
-  requestedBy    String?
-  approvedAt     Float?
-  approvedBy     String?
-  rejectedAt     Float?
-  rejectedBy     String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-
-  project        Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
-}
-
-model PurchaseOrder {
-  id          String        @id @default(uuid())
-  projectId   String
-  mrId        String?
-  vendorId    String?
-  vendorName  String?
-  amount      Float         @default(0)
-  status      GeneralStatus @default(draft)
-  billNo      String?
-  deliveryStatus String?
-  items       Json?
-  lines       Json?
-  itemSummary String?
-  costCategory String?
-  orderDate   String?
-  createdBy   String?
-  approvedBy  String?
-  approvedAt  Float?
-  rejectedBy  String?
-  rejectedAt  Float?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
-  project     Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
-}
-
-model GoodsReceipt {
-  id                 String   @id @default(uuid())
-  projectId          String
-  poId               String
-  amount             Float    @default(0)
-  receiptDate        String?
-  status             String?  @default("received")
-  centralStockPosted Boolean  @default(false)
-  receiveLines       Json?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  project            Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-}
-
-model Supplier {
-  id               String       @id @default(uuid())
-  name             String
-  code             String?
-  type             String?
-  email            String?
-  phone            String?
-  contactPerson    String?
-  address          String?
-  city             String?
-  category         String?
-  tin              String?
-  binVat           String?
-  bankName         String?
-  accountNo        String?
-  branch           String?
-  paymentMethod    String?
-  paymentTermsDays Int          @default(30)
-  creditLimit      Float?       @default(0)
-  remarks          String?
-  createdBy        String?
-  tenantId         String?
-  source           String?      @default("live")
-  status           ActiveStatus @default(active)
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-
-  bills            SupplierBill[]
-  payments         SupplierPayment[]
-  products         SupplierProduct[]
-  documents        SupplierDocument[]
-  notes            SupplierNote[]
-}
-
-model InventoryItem {
-  id           String   @id @default(uuid())
-  name         String
-  code         String?
-  category     String?
-  unit         String?  @default("unit")
-  currentStock Float    @default(0)
-  reorderLevel Float    @default(0)
-  unitPrice    Float    @default(0)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-}
-
-model ClientInvoice {
-  id          String   @id @default(uuid())
-  projectId   String
-  projectName String?
-  clientId    String
-  amount      Float    @default(0)
-  paidAmount  Float    @default(0)
-  dueDate     String?
-  billDate    String?
-  status      String   @default("draft")
-  billType    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  client      ClientRecord @relation(fields: [clientId], references: [id], onDelete: Cascade)
-}
-
-model ApprovalQueueRow {
-  id          String   @id @default(uuid())
-  entityType  String
-  entityId    String
-  projectId   String?
-  title       String
-  path        String
-  status      String   @default("pending")
-  submittedBy String?
-  submittedAt Float?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model SiteInCharge {
-  id          String       @id @default(uuid())
-  name        String
-  phone       String?
-  nid         String?
-  monthlyRate Float        @default(0)
-  status      ActiveStatus @default(active)
-  address     String?
-  notes       String?
-  startDate   String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-
-  assignments Assignment[]
-  materialLogs MaterialLog[]
-  settlements SiteSettlement[]
-  siteDiaries SiteDiary[]
-  equipmentLogs EquipmentLog[]
-}
-
-model Assignment {
-  id             String       @id @default(uuid())
-  siteInChargeId String
-  projectId      String
-  projectName    String?
-  startDate      String?
-  endDate        String?
-  status         ActiveStatus @default(active)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-
-  siteInCharge   SiteInCharge @relation(fields: [siteInChargeId], references: [id], onDelete: Cascade)
-  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
-}
-
-model MaterialLog {
-  id             String       @id @default(uuid())
-  projectId      String
-  siteInChargeId String
-  logDate        String
-  items          Json
-  remarks        String?
-  status         String       @default("submitted")
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-
-  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  siteInCharge   SiteInCharge @relation(fields: [siteInChargeId], references: [id], onDelete: Cascade)
-}
-
-model SiteSettlement {
-  id             String       @id @default(uuid())
-  projectId      String
-  siteInChargeId String
-  month          String
-  monthlyRate    Float        @default(0)
-  laborTotal     Float        @default(0)
-  advancePaid    Float        @default(0)
-  deductions     Float        @default(0)
-  netPayable     Float        @default(0)
-  materialSummary Json?       @default("[]")
-  status         String       @default("draft")
-  paidAt         String?
-  paymentRef     String?
-  remarks        String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-
-  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  siteInCharge   SiteInCharge @relation(fields: [siteInChargeId], references: [id], onDelete: Cascade)
-}
-
-model SiteDiary {
-  id             String   @id @default(uuid())
-  projectId      String
-  siteInChargeId String
-  logDate        String
-  weather        String?
-  workSummary    String?
-  laborCount     Int      @default(0)
-  status         String   @default("draft")
-  submittedAt    DateTime?
-  approvedAt     DateTime?
-  approvedBy     String?
-  progressEntryId String?
-  photos         Json     @default("[]")
-  createdBy      String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  siteInCharge   SiteInCharge @relation(fields: [siteInChargeId], references: [id], onDelete: Cascade)
-}
-
-model Worker {
-  id        String       @id @default(uuid())
-  name      String
-  phone     String?
-  nid       String?
-  category  String?
-  dailyRate Float        @default(0)
-  status    ActiveStatus @default(active)
-  address   String?
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-
-  payrolls  PayrollEntry[]
-}
-
-model PayrollEntry {
-  id         String   @id @default(uuid())
-  workerId   String
-  projectId  String?
-  month      String
-  totalDays  Int      @default(0)
-  netPayable Float    @default(0)
-  status     String   @default("draft")
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  worker     Worker   @relation(fields: [workerId], references: [id], onDelete: Cascade)
-}
-
-model ProjectProgress {
-  id           String   @id @default(uuid())
-  projectId    String
-  activity     String
-  remarks      String?
-  progressDate String
-  executedQty  Float    @default(1)
-  plannedQty   Float    @default(1)
-  refType      String?
-  refId        String?
-  boqId        String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  createdBy    String?
-
-  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-}
-
-
-model EquipmentLog {
-  id             String   @id @default(uuid())
-  projectId      String
-  siteInChargeId String
-  equipmentName  String
-  hours          Float    @default(0)
-  logDate        String
-  cost           Float    @default(0)
-  createdBy      String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  siteInCharge   SiteInCharge @relation(fields: [siteInChargeId], references: [id], onDelete: Cascade)
-}
-
-
-model SupplierBill {
-  id             String   @id @default(uuid())
-  supplierId     String
-  supplierName   String?
-  projectId      String?
-  billNo         String?
-  billDate       String?
-  dueDate        String?
-  amount         Float    @default(0)
-  paidAmount     Float    @default(0)
-  balance        Float    @default(0)
-  status         String   @default("draft")
-  sourceType     String?
-  sourceRef      String?
-  costCategory   String?
-  narration      String?
-  createdBy      String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  supplier       Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-}
-
-model SupplierPayment {
-  id             String   @id @default(uuid())
-  supplierId     String
-  supplierName   String?
-  paymentDate    String?
-  amount         Float    @default(0)
-  paymentMethod  String?
-  method         String?
-  refNo          String?
-  reference      String?
-  chequeNo       String?
-  paymentType    String?
-  narration      String?
-  allocations    Json?
-  createdBy      String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  supplier       Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-}
-
-model SupplierProduct {
-  id             String   @id @default(uuid())
-  supplierId     String
-  name           String
-  code           String?
-  unit           String?
-  category       String?
-  rate           Float    @default(0)
-  status         String   @default("active")
-  remarks        String?
-  createdBy      String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  supplier       Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-}
-
-model SupplierDocument {
-  id             String   @id @default(uuid())
-  supplierId     String
-  title          String
-  docType        String?
-  revision       String?
-  url            String?
-  fileUrl        String?
-  expiryDate     String?
-  status         String   @default("draft")
-  createdBy      String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  supplier       Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-}
-
-model SupplierNote {
-  id             String   @id @default(uuid())
-  supplierId     String
-  body           String
-  authorId       String?
-  authorName     String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  supplier       Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+model WorkerTransfer {
+  id            String   @id @default(uuid())
+  workerId      String
+  fromProjectId String?
+  toProjectId   String?
+  date          String?
+  note          String?
+  parentId      String?  
+  createdBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }

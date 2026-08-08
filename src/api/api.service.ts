@@ -18,7 +18,14 @@ const MODEL_MAP: Record<string, string> = {
   supplierDocuments: 'supplierDocument',
   supplierNotes: 'supplierNote',
   inventoryItems: 'inventoryItem',
+  inventoryMaterials: 'inventoryItem',
+  inventoryStockIn: 'inventoryStockIn',
+  inventoryStockOut: 'inventoryStockOut',
   clientInvoices: 'clientInvoice',
+  workerAdvances: 'workerAdvance',
+  workerSalaryPayments: 'workerSalaryPayment',
+  workerAttendance: 'workerAttendance',
+  workerTransfers: 'workerTransfer',
   approvalQueue: 'approvalQueueRow',
   approvalQueueRows: 'approvalQueueRow',
   siteInCharges: 'siteInCharge',
@@ -49,8 +56,20 @@ export class ApiService {
   async getList(collection: string, filter: any = {}) {
     const model = this.getModel(collection);
     if (!model) return [];
+    
+    const cleanFilter = { ...filter };
+    if (cleanFilter.parentId) {
+      const modelName = MODEL_MAP[collection] || collection;
+      const isProjectNested = ['projectMilestone', 'materialRequest', 'purchaseOrder', 'goodsReceipt', 'clientInvoice', 'assignment', 'materialLog', 'siteSettlement', 'siteDiary', 'projectProgress', 'equipmentLog'].includes(modelName);
+      
+      if (isProjectNested) {
+        cleanFilter.projectId = cleanFilter.parentId;
+      }
+      delete cleanFilter.parentId;
+    }
+
     return model.findMany({
-      where: filter,
+      where: cleanFilter,
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -72,6 +91,7 @@ export class ApiService {
     delete cleanData.id;
     delete cleanData.createdAt;
     delete cleanData.updatedAt;
+    delete cleanData.parentId;
     
     for (const key of ['rate', 'amount', 'quantity', 'total', 'paid', 'due', 'price', 'value', 'balance', 'openingBalance']) {
       if (cleanData[key] !== undefined && cleanData[key] !== null) {
@@ -85,6 +105,15 @@ export class ApiService {
     }
     if (modelName !== 'supplier') {
       delete cleanData.source;
+    }
+    if (modelName === 'inventoryItem') {
+      delete cleanData.status;
+      delete cleanData.createdBy;
+      delete cleanData.updatedBy;
+    }
+    if (modelName === 'worker') {
+      delete cleanData.updatedBy;
+      delete cleanData.createdBy;
     }
     
     try {
@@ -102,6 +131,7 @@ export class ApiService {
     delete cleanData.id;
     delete cleanData.createdAt;
     delete cleanData.updatedAt;
+    delete cleanData.parentId;
     
     for (const key of ['rate', 'amount', 'quantity', 'total', 'paid', 'due', 'price', 'value', 'balance', 'openingBalance']) {
       if (cleanData[key] !== undefined && cleanData[key] !== null) {
@@ -116,6 +146,15 @@ export class ApiService {
     if (modelName !== 'supplier') {
       delete cleanData.source;
     }
+    if (modelName === 'inventoryItem') {
+      delete cleanData.status;
+      delete cleanData.createdBy;
+      delete cleanData.updatedBy;
+    }
+    if (modelName === 'worker') {
+      delete cleanData.updatedBy;
+      delete cleanData.createdBy;
+    }
     
     try {
       return await model.update({
@@ -123,7 +162,17 @@ export class ApiService {
         data: cleanData,
       });
     } catch (error: any) {
-      require('fs').appendFileSync('/tmp/backend-error.log', JSON.stringify({ action: "update", collection, id, cleanData, error: error.message }) + '\\n');
+      if (error.code === 'P2025') {
+        try {
+          return await model.create({
+            data: { id, ...cleanData }
+          });
+        } catch (createError: any) {
+          require('fs').appendFileSync('/tmp/backend-error.log', JSON.stringify({ action: "update_create", collection, id, cleanData, error: createError.message }) + '\n');
+          throw createError;
+        }
+      }
+      require('fs').appendFileSync('/tmp/backend-error.log', JSON.stringify({ action: "update", collection, id, cleanData, error: error.message }) + '\n');
       throw error;
     }
   }
